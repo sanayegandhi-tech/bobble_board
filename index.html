@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bobble League Leaderboard</title>
+
+<!-- Open Graph meta tags for Discord preview -->
+<meta property="og:title" content="Bobble League Leaderboard">
+<meta property="og:description" content="Submit players, wins, matches, and see the top Bobble League scores!">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://sanayegandhi-tech.github.io/bobble_board/">
+<meta property="og:image" content="https://sanayegandhi-tech.github.io/bobble_board/bobble-league-miniature-ai-edited-v0-buxlecib2uud1.webp
+">
+
+<style>
+  body {
+    font-family: 'Arial', sans-serif;
+    background: #f4f4f9;
+    margin: 40px;
+    color: #333;
+  }
+  h1 { color: #2c3e50; }
+  input, button {
+    padding: 8px;
+    margin: 5px 0;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+  }
+  button {
+    cursor: pointer;
+    background-color: #2980b9;
+    color: white;
+    border: none;
+  }
+  button:hover { background-color: #3498db; }
+  table {
+    margin-top: 20px;
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 700px;
+    background: white;
+    box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+  }
+  th {
+    background-color: #2c3e50;
+    color: white;
+  }
+  .delete-btn {
+    background-color: #e74c3c;
+  }
+  .delete-btn:hover {
+    background-color: #c0392b;
+  }
+  .controls {
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+
+<h1>🏆 Bobble League Leaderboard</h1>
+
+<div>
+  <input type="text" id="player" placeholder="Player Name">
+  <input type="number" id="wins" placeholder="Wins">
+  <input type="number" id="matches" placeholder="Matches">
+  <button onclick="submitPlayer()">Submit</button>
+</div>
+
+<div class="controls">
+  <button onclick="resetLeaderboard()">Reset Leaderboard</button>
+</div>
+
+<table id="leaderboard">
+  <thead>
+    <tr>
+      <th>Rank</th>
+      <th>Player</th>
+      <th>Wins</th>
+      <th>Matches</th>
+      <th>Score</th>
+      <th>Delete</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+const k = 10;
+const c = 25;
+
+// Load data from localStorage
+let data = JSON.parse(localStorage.getItem("bobbleData")) || {};
+
+// Calculate True Score
+function calculateScore(wins, matches) {
+  const adjusted = (wins + k) / (matches + 2*k);
+  const confidence = matches / (matches + c);
+  return Math.round(adjusted * confidence * 1000) / 1000;
+}
+
+// Submit player
+function submitPlayer() {
+  const player = document.getElementById("player").value.trim();
+  const wins = parseInt(document.getElementById("wins").value);
+  const matches = parseInt(document.getElementById("matches").value);
+
+  if (!player || isNaN(wins) || isNaN(matches) || wins < 0 || matches < 0) {
+    alert("Enter a valid name, wins, and matches (>=0).");
+    return;
+  }
+
+  const score = calculateScore(wins, matches);
+  data[player] = { wins, matches, score };
+  saveData();
+  renderLeaderboard();
+
+  // Clear inputs
+  document.getElementById("player").value = "";
+  document.getElementById("wins").value = "";
+  document.getElementById("matches").value = "";
+}
+
+// Save to localStorage
+function saveData() {
+  localStorage.setItem("bobbleData", JSON.stringify(data));
+}
+
+// Delete a player
+function deletePlayer(player) {
+  delete data[player];
+  saveData();
+  renderLeaderboard();
+}
+
+// Reset leaderboard
+function resetLeaderboard() {
+  if (confirm("Are you sure you want to reset the leaderboard?")) {
+    data = {};
+    saveData();
+    renderLeaderboard();
+  }
+}
+
+// Render leaderboard
+function renderLeaderboard() {
+  const tbody = document.querySelector("#leaderboard tbody");
+  tbody.innerHTML = "";
+
+  // Sort by score descending
+  const sorted = Object.entries(data).sort((a, b) => b[1].score - a[1].score);
+
+  sorted.forEach(([player, stats], index) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${index + 1}</td>
+      <td>${player}</td>
+      <td>${stats.wins}</td>
+      <td>${stats.matches}</td>
+      <td>${stats.score}</td>
+      <td><button class="delete-btn" onclick="deletePlayer('${player}')">Delete</button></td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+// Initialize
+renderLeaderboard();
+</script>
+
+</body>
+</html>
